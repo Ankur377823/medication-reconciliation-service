@@ -1,0 +1,16 @@
+{
+  "conflicting_classes": [
+    ["ibuprofen", "diclofenac"],
+    ["aspirin", "warfarin"],
+    ["ibuprofen", "aspirin"],
+    ["metformin", "alcohol"],
+    ["warfarin", "diclofenac"],
+    ["paracetamol", "alcohol"]
+  ],
+  "max_doses": {
+    "paracetamol": "1000mg",
+    "ibuprofen": "800mg",
+    "aspirin": "500mg",
+    "metformin": "2000mg"
+  }
+}
