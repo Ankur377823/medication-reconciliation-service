@@ -2,7 +2,11 @@
 
 A FastAPI + MongoDB service that ingests medication lists from multiple clinical sources, detects conflicts across them, and surfaces unresolved conflicts for clinicians and reporting. A React web app sits on top of the API so reviewers can work through conflicts without touching the API directly.
 
-**API (live):** https://medication-reconciliation-service.onrender.com/docs
+**Live app:** https://medication-reconciliation-service-1-y257.onrender.com/
+
+**API docs (live):** https://medication-reconciliation-service.onrender.com/docs
+
+Both run on Render's free tier, so the first load can take up to a minute while the API wakes up.
 
 The repository holds two independent apps:
 
