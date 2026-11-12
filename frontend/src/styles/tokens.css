@@ -1,0 +1,45 @@
+/* Design tokens. Colour is used sparingly: amber means "needs review",
+   red is reserved for drug interactions, everything else stays neutral. */
+:root {
+  --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-subtle: #f9fafb;
+  --ink: #101828;
+  --ink-secondary: #344054;
+  --muted: #667085;
+  --border: #e4e7ec;
+  --border-strong: #d0d5dd;
+
+  --accent: #0e6f6a;
+  --accent-hover: #0b5b57;
+  --accent-soft: #e6f2f1;
+  --focus-ring: rgba(14, 111, 106, 0.28);
+
+  --nav-bg: #0f1d2e;
+  --nav-ink: #b8c4d2;
+  --nav-ink-strong: #ffffff;
+  --nav-active: rgba(255, 255, 255, 0.08);
+  --nav-border: rgba(255, 255, 255, 0.08);
+
+  --warn: #b54708;
+  --warn-bg: #fffaeb;
+  --warn-border: #fedf89;
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  --danger-border: #fecdca;
+  --ok: #067647;
+  --ok-bg: #ecfdf3;
+  --ok-border: #abefc6;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-lg: 0 20px 40px -12px rgba(16, 24, 40, 0.25);
+
+  --sidebar-width: 248px;
+}

@@ -97,7 +97,7 @@ for i in range(1, num_patients + 1):
             "created_at": random_past_date(30),
         }
         snapshots.insert_one(snapshot_doc)
-        patient_snapshots.append(meds)
+        patient_snapshots.append([{**m, "source": snapshot_doc["source"]} for m in meds])
 
    
     

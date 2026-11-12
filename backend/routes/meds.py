@@ -31,7 +31,7 @@ async def ingest(data: IngestRequest):
     patient_id = data.patient_id
     source = data.source
 
-    meds = [normalize_med(m.dict()) for m in data.medications]
+    meds = [normalize_med(m.model_dump()) for m in data.medications]
 
     # Auto-create patient record if it doesn't exist yet
     if not patients.find_one({"_id": patient_id}):
@@ -53,9 +53,17 @@ async def ingest(data: IngestRequest):
     prior_snapshots = list(
         snapshots.find({"patient_id": patient_id, "version": {"$lt": version}})
     )
-    meds_list = [s["medications"] for s in prior_snapshots]
 
-    detected = detect_conflicts(patient_id, meds, meds_list)
+    # Tag every medication with the source that reported it, so each conflict
+    # records which two sources disagree. The tags are used for comparison
+    # only; stored snapshots keep the source at the snapshot level.
+    new_meds = [{**m, "source": source} for m in meds]
+    meds_list = [
+        [{**m, "source": s.get("source", "")} for m in s["medications"]]
+        for s in prior_snapshots
+    ]
+
+    detected = detect_conflicts(patient_id, new_meds, meds_list)
 
     inserted = 0
     for c in detected:
@@ -159,6 +167,52 @@ def resolve_conflict(data: ResolveRequest):
         raise HTTPException(status_code=404, detail="Conflict not found")
 
     return {"message": "Conflict resolved"}
+
+
+# ─────────────────────────────────────────────
+# LIST PATIENTS (with conflict counts)
+# ─────────────────────────────────────────────
+
+@router.get("/patients")
+def list_patients(clinic_id: str | None = None):
+    """
+    List every patient with their total and unresolved conflict counts.
+    Optionally filter by clinic. Patients needing review come first.
+    """
+    pipeline = []
+    if clinic_id:
+        pipeline.append({"$match": {"clinic_id": clinic_id}})
+
+    pipeline += [
+        {
+            "$lookup": {
+                "from": "conflicts",
+                "localField": "_id",
+                "foreignField": "patient_id",
+                "as": "patient_conflicts",
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "patient_id": "$_id",
+                "clinic_id": 1,
+                "total_conflicts": {"$size": "$patient_conflicts"},
+                "unresolved_count": {
+                    "$size": {
+                        "$filter": {
+                            "input": "$patient_conflicts",
+                            "as": "c",
+                            "cond": {"$eq": ["$$c.status", "unresolved"]},
+                        }
+                    }
+                },
+            }
+        },
+        {"$sort": {"unresolved_count": -1, "patient_id": 1}},
+    ]
+
+    return list(patients.aggregate(pipeline))
 
 
 # ─────────────────────────────────────────────

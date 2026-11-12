@@ -1,54 +1,89 @@
 # Medication Reconciliation & Conflict Reporting Service
 
-A FastAPI + MongoDB service that ingests medication lists from multiple clinical sources, detects conflicts across them, and surfaces unresolved conflicts for clinicians and reporting.
+A FastAPI + MongoDB service that ingests medication lists from multiple clinical sources, detects conflicts across them, and surfaces unresolved conflicts for clinicians and reporting. A React web app sits on top of the API so reviewers can work through conflicts without touching the API directly.
 
-**Live Demo:** https://medication-reconciliation-service.onrender.com/docs
+**API (live):** https://medication-reconciliation-service.onrender.com/docs
+
+The repository holds two independent apps:
+
+| Folder | What it is | Stack |
+|--------|------------|-------|
+| `backend/` | REST API, conflict detection, reporting | Python, FastAPI, MongoDB |
+| `frontend/` | Web app for reviewers | React, Vite, JavaScript |
 
 ---
 
-## Quick Start (under 5 minutes)
+## Quick Start
 
 ### Prerequisites
 - Python 3.10+
+- Node.js 18+
 - MongoDB running locally (or a MongoDB Atlas connection string)
 
-### Setup
+### 1. Backend
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/Ankur377823/medication-reconciliation-service.git
-cd medication-reconciliation-service
+cd medication-reconciliation-service/backend
 
-# 2. Create and activate virtual environment
+# Create and activate a virtual environment
 python -m venv myenv
-myenv\Scripts\activate        # Windows
+myenv\Scriptsctivate        # Windows
 # source myenv/bin/activate   # Mac/Linux
 
-# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Create .env file
+# Create backend/.env
 echo MONGO_URL=mongodb://localhost:27017 > .env
 
-# 5. Run the server
 uvicorn main:app --reload
 ```
 
-Open http://localhost:8000/docs for the interactive Swagger UI.
+The API runs at http://localhost:8000, with interactive docs at http://localhost:8000/docs.
+
+### 2. Frontend
+
+In a second terminal:
+
+```bash
+cd medication-reconciliation-service/frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. In development the app calls the API at `http://localhost:8000`. To point it somewhere else, copy `frontend/.env.example` to `frontend/.env` and set `VITE_API_URL`.
 
 ### Seed the database (optional)
 
 ```bash
+cd backend
 python seed/seed_data.py
 ```
 
-This generates 15 synthetic patients across 3 clinics with varied medication snapshots and conflicts.
+This generates 15 synthetic patients across 3 clinics with varied medication snapshots and conflicts. It wipes existing data first.
 
 ### Run tests
 
 ```bash
-pytest tests/ -v
+cd backend
+pytest
 ```
+
+---
+
+## Frontend
+
+| Page | What it does |
+|------|--------------|
+| Overview | Totals, workload per clinic, and a review queue sorted by unresolved conflicts |
+| Patients | Searchable, sortable patient list with clinic and "needs review" filters |
+| Patient record | Conflicts shown as a side-by-side comparison of what each source reported, a resolve dialog that records who, which source and why, and the full medication history as a version timeline |
+| Submit medication list | Form for recording a new medication list from a source |
+
+Design choices:
+- Colour is reserved for status. Amber marks items that need review, red marks drug interactions, and everything else is neutral. Every status also has a text label, so nothing depends on colour alone.
+- Conflicting values are placed side by side rather than described in a sentence, so differences can be compared at a glance.
+- Lists are sorted by risk first (most unresolved conflicts, interactions before other conflict types).
 
 ---
 
@@ -73,29 +108,45 @@ conflicts collection     ← deduplicated conflict records stored with status=un
 ### Folder Structure
 
 ```
-├── config/
-│   └── db.py                  # MongoDB connection, collection references, indexes
-├── data/
-│   └── rules.json             # Static conflict rules (blacklisted drug combos, max doses)
-├── model/
-│   └── schemas.py             # Pydantic V2 request/response models
-├── routes/
-│   └── meds.py                # All FastAPI route handlers
-├── services/
-│   ├── conflict_engine.py     # Core conflict detection logic
-│   └── normalize.py           # Drug name/dose normalization
-├── seed/
-│   └── seed_data.py           # Synthetic data generator (15 patients, 3 clinics)
-├── tests/
-│   ├── conftest.py            # Fixtures, TestClient, test DB setup
-│   ├── test_normalize.py      # Unit tests for normalization
-│   ├── test_conflict_engine.py# Unit tests for conflict detection edge cases
-│   ├── test_api.py            # Integration tests for all endpoints
-│   └── test_aggregations.py   # Tests for reporting/aggregation endpoints
-├── main.py                    # FastAPI app entry point
-├── render.yaml                # Render deployment config
-├── SCHEMA.md                  # Detailed MongoDB schema + indexing rationale
-└── pytest.ini                 # Pytest configuration
+├── backend/
+│   ├── config/
+│   │   └── db.py                   # MongoDB connection, collection references, indexes
+│   ├── data/
+│   │   └── rules.json              # Static conflict rules (blacklisted drug combos, max doses)
+│   ├── model/
+│   │   └── schemas.py              # Pydantic V2 request/response models
+│   ├── routes/
+│   │   └── meds.py                 # All FastAPI route handlers
+│   ├── services/
+│   │   ├── conflict_engine.py      # Core conflict detection logic
+│   │   └── normalize.py            # Drug name/dose normalization
+│   ├── seed/
+│   │   └── seed_data.py            # Synthetic data generator (15 patients, 3 clinics)
+│   ├── tests/                      # Unit and integration tests
+│   ├── main.py                     # FastAPI app entry point (CORS, router)
+│   ├── requirements.txt
+│   ├── pytest.ini
+│   └── SCHEMA.md                   # Detailed MongoDB schema + indexing rationale
+├── frontend/
+│   ├── src/
+│   │   ├── api/client.js           # All calls to the backend
+│   │   ├── hooks/useAsync.js       # Data loading with cancellation
+│   │   ├── utils/format.js         # Dates, labels, conflict type metadata
+│   │   ├── styles/                 # Design tokens, base, layout, component styles
+│   │   ├── components/
+│   │   │   ├── layout/             # App shell, sidebar, API status
+│   │   │   ├── ui/                 # Button, Card, DataTable, Dialog, Badge, Field, ...
+│   │   │   ├── conflicts/          # ConflictCard, ConflictComparison, ResolveDialog
+│   │   │   ├── snapshots/          # SnapshotTimeline
+│   │   │   └── ingest/             # MedicationRows
+│   │   ├── pages/                  # Overview, Patients, PatientDetail, Ingest
+│   │   ├── App.jsx                 # Routes
+│   │   └── main.jsx                # Entry point
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+├── render.yaml                     # Render deployment config for both apps
+└── README.md
 ```
 
 ---
@@ -110,6 +161,7 @@ conflicts collection     ← deduplicated conflict records stored with status=un
 | POST | `/resolve` | Mark a conflict as resolved with audit trail |
 | GET | `/patients-with-conflicts?clinic_id=X` | Patients in a clinic with ≥1 unresolved conflict |
 | GET | `/conflict-stats` | Per-clinic count of patients with ≥2 conflicts (last 30 days) |
+| GET | `/patients?clinic_id=X` | All patients with total and unresolved conflict counts (`clinic_id` optional) |
 
 ---
 
@@ -120,6 +172,33 @@ conflicts collection     ← deduplicated conflict records stored with status=un
 | `dose_mismatch` | Same drug appears with different doses across two sources |
 | `status_conflict` | Same drug is "active" in one source and "stopped" in another |
 | `class_conflict` | Two drugs that must not be combined are both present (per rules.json) |
+
+---
+
+## Deployment (Render)
+
+The two apps are deployed as two Render services from this one repository. `render.yaml` describes both.
+
+**Backend: Web Service**
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| Environment | `MONGO_URL` = your MongoDB connection string |
+| Environment (optional) | `ALLOWED_ORIGINS` = the frontend URL, to restrict CORS to it. Defaults to any origin. |
+
+**Frontend: Static Site**
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `frontend` |
+| Build Command | `npm ci && npm run build` |
+| Publish Directory | `dist` |
+| Environment | `VITE_API_URL` = the backend URL, e.g. `https://medication-reconciliation-service.onrender.com` |
+
+`VITE_API_URL` is read at build time, so redeploy the static site after changing it.
 
 ---
 
@@ -148,7 +227,7 @@ Before storing a new conflict, we check whether an identical unresolved conflict
 |------------|-----------|
 | `rules.json` dose units not normalized (`1g` vs `1000mg` not caught as equal) | Add a unit normalization layer before dose comparison |
 | `max_doses` in `rules.json` is defined but not enforced | Implement overdose detection in `conflict_engine.py` |
-| No authentication on any endpoint | Add OAuth2 / API key middleware |
+| No authentication on any endpoint or in the web app | Add OAuth2 / API key middleware and a sign-in flow |
 | `clinic_id` is set to `"unknown"` if not provided on first ingest | Caller should always pass `clinic_id` — could add validation |
 | Free Render tier spins down after 15 min inactivity | Use UptimeRobot pinger or upgrade to paid tier |
 | No pagination on conflict/snapshot list endpoints | Add `skip`/`limit` query params for large datasets |
@@ -160,7 +239,8 @@ Before storing a new conflict, we check whether an identical unresolved conflict
 Tests use a separate `med_service_test` database that is wiped before every test — your real data is never touched.
 
 ```bash
-pytest tests/ -v
+cd backend
+pytest
 ```
 
 **69 tests** across 4 files:

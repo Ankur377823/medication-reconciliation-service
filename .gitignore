@@ -25,3 +25,11 @@ logs/
 
 data/db/
 mongo-data/
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Local tooling
+.claude/

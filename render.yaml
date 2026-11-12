@@ -1,9 +1,22 @@
 services:
+  # FastAPI backend
   - type: web
     name: medication-reconciliation-service
     runtime: python
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: MONGO_URL
-        sync: false   # you will paste this manually in Render dashboard
+        sync: false   # paste the MongoDB connection string in the Render dashboard
+
+  # React frontend, served as a static site
+  - type: web
+    name: medication-reconciliation-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://medication-reconciliation-service.onrender.com
